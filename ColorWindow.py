@@ -1,9 +1,9 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QFileDialog, QMenu, QMenuBar, QComboBox, QMessageBox, QMainWindow, QDialog, QPushButton, QVBoxLayout,QWidget, QHBoxLayout, QLineEdit, QLabel, QCheckBox
-from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtWidgets import *
 from Constants import *
 from Channels import Channels
 import cv2
+
 class ColorWindow(QWidget):
     def __init__(self,imagePath, main_window, channels):
         super().__init__()
@@ -13,6 +13,7 @@ class ColorWindow(QWidget):
         self.setFixedHeight(COLORWINDOW_HEIGHT)
         self.setFixedWidth(COLORWINDOW_WIDTH)
         ## MAIN LAYOUT
+        self.color_list = ["Dapi", "Red", "Green", "other"]
         layout = QVBoxLayout()
 
         ### CHOOSE COLOR FROM COMBO BOX
@@ -20,7 +21,7 @@ class ColorWindow(QWidget):
         self.label0 = QLabel("Choose the color of channel: ")
         self.choose_hbox.addWidget(self.label0)
         self.defined_colors = QComboBox()
-        self.defined_colors.addItems(["Dapi", "Red", "Green", "other"])
+        self.defined_colors.addItems(self.color_list)
         self.defined_colors.currentIndexChanged.connect(self.selectionchange)
         self.choose_hbox.addWidget(self.defined_colors)
         layout.addLayout(self.choose_hbox)
@@ -32,6 +33,7 @@ class ColorWindow(QWidget):
         self.label.hide()
         self.input_color = QLineEdit()
         self.input_color.setPlaceholderText(" write your color here...")
+        self.input_color.setStyleSheet("border-radius: 2px")
         self.new_color_hbox.addWidget(self.input_color)
         self.input_color.hide()
         layout.addLayout(self.new_color_hbox)
@@ -41,11 +43,12 @@ class ColorWindow(QWidget):
         self.cancel_button = QPushButton("cancel")
         self.buttons_hbox.addWidget(self.cancel_button)
         self.cancel_button.clicked.connect(self.close_window)
-        self.cancel_button.setStyleSheet("background-color:gray; border-radius: 2px;")
+        self.cancel_button.setStyleSheet("border-radius: 3px; background-color:black; color:white; border: 3px solid #607D8B ;")
         self.ok_button = QPushButton("OK")
         self.ok_button.setFixedHeight(30)
+        self.ok_button.setAutoDefault(True)
         self.cancel_button.setFixedHeight(30)
-        self.ok_button.setStyleSheet("background-color:green; border-radius: 2px;")
+        self.ok_button.setStyleSheet("border-radius: 3px; background-color:black; color:white; border: 3px solid #009688;")
         self.ok_button.clicked.connect(self.insert_channel)
         self.buttons_hbox.addWidget(self.ok_button)
         layout.addLayout(self.buttons_hbox)
