@@ -46,7 +46,7 @@ class Adjustments(QWidget):
         self.create_crop()
         self.layout.addLayout(self.adjust_vbox)
         self.apply_button = QPushButton("Apply")
-        self.apply_button.setStyleSheet("background-color: green; color: white; font-weight: bold;")
+        self.apply_button.setStyleSheet("background-color: #009688; color: white; font-weight: bold;")
         self.apply_button.clicked.connect(lambda: self.apply_click())
         self.main_layout.addWidget(self.apply_button)
         self.setLayout(self.main_layout)
@@ -253,21 +253,28 @@ class Adjustments(QWidget):
         return image
 
     def apply_adjustments(self, image):
+        ## apply temporary crops
         new_image = self.apply_crops(image)
+        ## apply temporary delettions
         new_image = self.apply_deletions(new_image)
+        ## apply temporary threshold
         _, mask = cv2.threshold(cv2.cvtColor(new_image, cv2.COLOR_RGB2GRAY), self.temp_thresh,
                                 1, cv2.THRESH_BINARY)
+        ## mask the image
         new_image = new_image * mask[..., None]
+        ##apply temporary constrast and brightness
         new_image = cv2.addWeighted(new_image, self.temp_alpha,
                                     np.zeros(self.image.shape,
                                              self.image.dtype), 0,
                                     self.temp_beta)
         ##TODO
         new_image = np.where(new_image <= self.temp_beta, 0, new_image)
+        ## apply temporary denoising
         new_image = self.denoise(new_image, self.temp_noise)
         return new_image
 
     def show_image(self):
+        ## resize image and update the viewer after each change
         new_image = self.apply_adjustments(self.image.copy())
         new_image = cv2.resize(new_image, (ADJUSTIMAGE_WIDTH, ADJUSTIMAGE_HEIGHT))
         height, width, channel = new_image.shape
@@ -285,18 +292,19 @@ class Adjustments(QWidget):
         val = change[1]
         if type == "contrast":
             self.temp_alpha = val
-            self.show_image()
         elif type == "brightness":
             self.temp_beta = val
-            self.show_image()
         elif type == "Threshold":
             self.temp_thresh = val
-            self.show_image()
         elif type == "Noise":
             self.temp_noise = val
-            self.show_image()
+        else:
+            return
+        self.show_image()
+
 
     def update_noise(self, val):
+        ## this function is called when the value of the slider changes or the number in edit box
         if isinstance(val, str):
             try:
                 val = float(val)
@@ -306,12 +314,12 @@ class Adjustments(QWidget):
             if val > 20 or val < 0:
                 self.make_error('Enter a integer between 0 and 10')
                 return
-
         self.noise_input.setText(str(val))
         self.noise_slider.setValue(int(val))
         self.update_image(("Noise", int(val)))
 
     def update_threshold(self, val):
+        ## this function is called when the value of the slider changes or the number in edit box
         if isinstance(val, str):
             try:
                 val = float(val)
@@ -327,6 +335,7 @@ class Adjustments(QWidget):
         self.update_image(("Threshold", int(val)))
 
     def update_contrast(self, val):
+        ## this function is called when the value of the slider changes or the number in edit box
         if isinstance(val, str):
             try:
                 val = float(val)
@@ -344,6 +353,7 @@ class Adjustments(QWidget):
         self.update_image(("contrast", alpha))
 
     def update_brightness(self, val):
+        ## this function is called when the value of the slider changes or the number in edit box
         if isinstance(val, str):
             try:
                 val = float(val)
@@ -353,13 +363,14 @@ class Adjustments(QWidget):
             if val > 100 or val < 0:
                 self.make_error('Enter a number between 0 and 100')
                 return
-
         self.brightness_input.setText(str(val))
         self.brightness_slider.setValue(int(val))
         self.update_image(("brightness", int(val)))
 
     def create_image_label(self):
+        ## create viewer for the image to adjust
         self.image_vbox = QVBoxLayout()
+        self.image_vbox.setAlignment(Qt.AlignCenter)
         self.layout.addLayout(self.image_vbox)
         self.viewer = AdjustViewer(self, ADJUSTIMAGE_WIDTH, ADJUSTIMAGE_HEIGHT, self.channels, self.color)
         self.viewer.setPhoto(None)
@@ -368,14 +379,14 @@ class Adjustments(QWidget):
         self.create_zoom()
 
     def create_zoom(self):
+        ## this function adds two buttons for zoom in and out
         self.zoom_hbox = QHBoxLayout()
+        self.zoom_hbox.setAlignment(Qt.AlignCenter)
         self.image_vbox.addLayout(self.zoom_hbox)
         self.zoomin_button = QPushButton()
         self.zoomout_button = QPushButton()
-        # self.zoomin_button.setIcon(QIcon("icons/zoomin.png"))
-        # self.zoomout_button.setIcon(QIcon("icons/zoomout.png"))
-        self.zoomin_button.setStyleSheet("border:None; background-image: url('icons/zoomin20.png');")
-        self.zoomout_button.setStyleSheet("border:None; background-image: url('icons/zoomout20.png'); ")
+        self.zoomin_button.setStyleSheet("border:None; background-image: url('icons/zoom-in(2).png');")
+        self.zoomout_button.setStyleSheet("border:None; background-image: url('icons/zoom-out(2).png'); ")
         self.zoomin_button.setFixedWidth(20)
         self.zoomin_button.setFixedHeight(20)
         self.zoomout_button.setFixedHeight(20)

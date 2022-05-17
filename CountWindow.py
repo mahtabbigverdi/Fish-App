@@ -20,7 +20,9 @@ class CountWindow(QWidget):
         self.setup_bool = False
         self.main_layout = QVBoxLayout()
         self.setLayout(self.main_layout)
+        ## detector for detecting signals or blobs in a channel
         self.detector = cv2.SimpleBlobDetector_create()
+        ## set parameters of the detecor
         self.set_detector()
         self.removeds = []
         self.setFixedWidth(COUNTWINDOW_WIDTH)
@@ -29,6 +31,7 @@ class CountWindow(QWidget):
         self.delete_label.setAlignment(Qt.AlignCenter)
         self.delete_label.setStyleSheet("background-color:black; color:white; font-weight: bold")
         self.main_layout.addWidget(self.delete_label)
+        ## the viewer for image in count window
         self.viewer = PhotoViewer(self, COUNTIMAGE_WIDTH, COUNTIMAGE_HEIGHT)
         self.viewer.setPhoto(None)
         self.viewer.counter_mode = True
@@ -53,7 +56,9 @@ class CountWindow(QWidget):
         self.btn_hbox.addWidget(self.apply_btn)
         self.apply_btn.clicked.connect(self.apply_changes)
         self.undo_btn.clicked.connect(self.undo_deletion)
+        ## find contours and blobs
         self.process_image()
+        ## draw contours and their numbers
         self.show_image()
 
 
@@ -62,6 +67,7 @@ class CountWindow(QWidget):
 
 
     def show_image(self):
+        ## draw all keypoints in teh list with a corresponding number
         new_image =  cv2.drawKeypoints(self.image, tuple(self.keypoints), np.array([]), (255, 255, 255),
                                  cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 
@@ -84,6 +90,7 @@ class CountWindow(QWidget):
         self.update_label()
 
     def update_label(self):
+        ## show current number of blobs
         self.label.setText("Number of objects is " + str(self.count()))
 
 
@@ -115,6 +122,7 @@ class CountWindow(QWidget):
 
 
     def process_image(self):
+        ## find contours of the image
         im = cv2.cvtColor(self.image, cv2.COLOR_RGB2GRAY)
         _, im = cv2.threshold(im, 10, 255, cv2.THRESH_OTSU)
         im =cv2.bitwise_not(im)
@@ -144,6 +152,7 @@ class CountWindow(QWidget):
 
 
     def check_point(self, point):
+        ## check if a clicked point is in a certain blob then delete it and add the deleted keypoint to a list
         point = [int(point.x()), int(point.y())]
         point[0] *= self.image.shape[1] / COUNTIMAGE_WIDTH
         point[1] *= self.image.shape[0] / COUNTIMAGE_HEIGHT
@@ -179,16 +188,11 @@ class CountWindow(QWidget):
 
 
     def undo_deletion(self):
-        # self.removed_contours.pop()
-        # if len(self.removed_contours) == 0:
-        #     self.undo_btn.setEnabled(False)
+        ## return the last deleted keypoint to the main list
         self.keypoints.append(self.removeds.pop())
         if len(self.removeds) == 0:
             self.undo_btn.setEnabled(False)
         self.show_image()
 
     def apply_changes(self):
-        # self.channels.change_channel(self.color, self.apply_mask(), self.begin_x, self.begin_y,
-        #                              self.image_width, self.image_height)
-        # self.main_window.update_image()
         self.close()

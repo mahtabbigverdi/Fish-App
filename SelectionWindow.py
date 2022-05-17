@@ -8,12 +8,16 @@ import cv2
 class SelectionWindow(QWidget):
     def __init__(self, main_window, color, label_text, for_adjust = False , for_move = False, for_count = False  ):
         super().__init__()
+        ## selection window is a window used for choosing between whole image mode or part of it in several cases
+        ## such as adjustment, movement and counting
+
         self.main_window = main_window
         self.color = color
         self.main_layout = QVBoxLayout()
         self.setLayout(self.main_layout)
         self.setFixedWidth(SELECTIONWINDOW_WIDTH)
         self.setFixedHeight(SELECTIONWINDOW_HEIGHT)
+        ## define the mode
         self.for_adjust = for_adjust
         self.for_move = for_move
         self.for_count = for_count
@@ -58,11 +62,11 @@ class SelectionWindow(QWidget):
 
     def select_part(self):
         if self.for_adjust:
-            self.main_window.switch_adjust(self.color)
+            self.main_window.select_for_adjust(self.color)
         elif self.for_move:
-            self.main_window.switch_move(self.color)
+            self.main_window.select_for_move(self.color)
         elif self.for_count:
-           self.main_window.switch_count(self.color)
+           self.main_window.select_for_count(self.color)
 
         self.close()
 

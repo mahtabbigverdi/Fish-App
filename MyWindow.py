@@ -29,6 +29,9 @@ class MyWindow(QWidget):
         self.main_layout = QHBoxLayout()
         self.setLayout(self.main_layout)
 
+        ## to group buttons to active/deactive them when required
+        self.buttonGroup = QButtonGroup()
+
         ## image vbox contains the image viewer and zoom in/out buttons, when viewer is in "whole" move mode a hbox containing two
         # buttons of Done and Reload is added to this vbox
         self.image_vbox = QVBoxLayout()
@@ -84,25 +87,25 @@ class MyWindow(QWidget):
         self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.main_vbox.addWidget(self.scroll_area)
 
-        self.create_button()
+        self.create_add_button()
 
         self.main_layout.addLayout(self.main_vbox)
 
-        self.buttonGroup = QButtonGroup()
+
 
         self.create_menus()
 
         self.show()
 
     def create_zoom(self):
+        ## this function adds two buttons for zoom in and out
         self.zoom_hbox = QHBoxLayout()
+        self.zoom_hbox.setAlignment(Qt.AlignCenter)
         self.image_vbox.addLayout(self.zoom_hbox)
         self.zoomin_button = QPushButton()
         self.zoomout_button = QPushButton()
-        # self.zoomin_button.setIcon(QIcon("icons/zoomin.png"))
-        # self.zoomout_button.setIcon(QIcon("icons/zoomout.png"))
-        self.zoomin_button.setStyleSheet("border:None; background-image: url('icons/zoomin20.png');")
-        self.zoomout_button.setStyleSheet("border:None; background-image: url('icons/zoomout20.png'); ")
+        self.zoomin_button.setStyleSheet("border:None; background-image: url('icons/zoom-in(2).png');")
+        self.zoomout_button.setStyleSheet("border:None; background-image: url('icons/zoom-out(2).png'); ")
         self.zoomin_button.setFixedWidth(20)
         self.zoomin_button.setFixedHeight(20)
         self.zoomout_button.setFixedHeight(20)
@@ -113,10 +116,11 @@ class MyWindow(QWidget):
         self.zoom_hbox.addWidget(self.zoomout_button)
 
     def create_menus(self):
+        ## this function creates menu for the main window
         self.menubar = QMenuBar()
         self.fileMenu = QMenu("File")
         self.menubar.addMenu(self.fileMenu)
-        self.fileMenu.addAction("Add channel", self.clicked_btn)
+        # self.fileMenu.addAction("Add channel", self.clicked_btn)
 
         self.invert_action = self.fileMenu.addAction("invert", self.invert)
         self.uninvert_action = self.fileMenu.addAction("uninvert", self.uninvert)
@@ -126,60 +130,69 @@ class MyWindow(QWidget):
         self.main_layout.setMenuBar(self.menubar)
 
     def invert(self):
+        ## after clicking on "invert" in file menu, this function is called, this function turns on the invert mode in Channels class
         self.channels.StartInvertMode()
         self.update_image()
         self.uninvert_action.setEnabled(True)
         self.invert_action.setEnabled(False)
 
     def uninvert(self):
+        ## this function turns off the invert mode in Channels class
         self.channels.EndInvertMode()
         self.update_image()
         self.uninvert_action.setEnabled(False)
         self.invert_action.setEnabled(True)
 
-    def create_button(self):
+    def create_add_button(self):
+        ## this function adds "add channel" button
         btn1 = QPushButton("  Add channel!")
         btn1.setFixedWidth(SCROLLAREA_WIDTH)
         btn1.setFixedHeight(50)
-        # btn1.setGeometry(100,100, 150,50)
         btn1.setStyleSheet("background-color: #009688; color: white;  border-radius: 5px; font-weight: bold")
         btn1.setIcon(QIcon("icons/plus.png"))
-        btn1.clicked.connect(self.clicked_btn)
+        btn1.clicked.connect(self.open_color_window)
+        self.buttonGroup.addButton(btn1)
         self.main_vbox.addWidget(btn1)
 
-    def update_checkbox(self, color):
+    def update_channel_list(self, color):
+        ## if the color was not added before, is added here
         if color not in self.SELECTED_COLORS:
             self.SELECTED_COLORS.add(color)
             if color == "Dapi":
                 self.invert_action.setEnabled(True)
                 self.uninvert_action.setEnabled(False)
             new_hbox = QHBoxLayout()
-            check_btn = QToolButton()
-            check_btn.setToolButtonStyle(Qt.ToolButtonIconOnly)
-            check_btn.setIcon(QIcon("icons/visibility.png"))
-            check_btn.setStyleSheet("border:None")
-            check_btn.clicked.connect(lambda: self.check_function(color, check_btn))
-            new_hbox.addWidget(check_btn)
-            label = QLabel(color)
-            label.setStyleSheet("font-weight:bold;")
-            new_hbox.addWidget(label)
+            ## visibility button for hide/show the channel
+            visibility_btn = QToolButton()
+            visibility_btn.setToolButtonStyle(Qt.ToolButtonIconOnly)
+            visibility_btn.setIcon(QIcon("icons/visibility.png"))
+            visibility_btn.setStyleSheet("border:None")
+            visibility_btn.clicked.connect(lambda: self.hide_and_show(color, visibility_btn))
+            new_hbox.addWidget(visibility_btn)
+            ## label for name of the channel
+            name_label = QLabel(color)
+            name_label.setStyleSheet("font-weight:bold;")
+            new_hbox.addWidget(name_label)
+            new_hbox.addStretch(8)
+            ## add move feature for the channel
             move_button = QToolButton()
             move_button.setToolButtonStyle(Qt.ToolButtonIconOnly)
             move_button.setIcon(QIcon("icons/move.png"))
             move_button.setStyleSheet("border:None;")
             move_button.setToolTip("move")
             new_hbox.addWidget(move_button)
+            move_button.clicked.connect(lambda: self.open_select_move(color))
 
+            ## add adjustment feature for the channel
             adjust_button = QToolButton()
             adjust_button.setToolButtonStyle(Qt.ToolButtonIconOnly)
             adjust_button.setIcon(QIcon("icons/equalizer.png"))
             adjust_button.setStyleSheet("border:None;")
             adjust_button.setToolTip("adjust")
             adjust_button.clicked.connect(lambda: self.open_select_adjust(color))
-            move_button.clicked.connect(lambda: self.open_select_move(color))
-
             new_hbox.addWidget(adjust_button)
 
+            ## add count feature for the channel
             count_button = QToolButton()
             count_button.setToolButtonStyle(Qt.ToolButtonIconOnly)
             count_button.setIcon(QIcon("icons/counter.png"))
@@ -188,15 +201,17 @@ class MyWindow(QWidget):
             count_button.clicked.connect(lambda: self.open_select_count(color))
             new_hbox.addWidget(count_button)
 
+            ## add delete button for the channel
             delete_btn = QToolButton()
             delete_btn.setToolTip("delete")
             delete_btn.setToolButtonStyle(Qt.ToolButtonIconOnly)
             delete_btn.setIcon(QIcon("icons/bin.png"))
             delete_btn.setStyleSheet("border:None")
-            # new_hbox.addStretch(1)
             new_hbox.addWidget(delete_btn)
+
             self.scroll_vbox.addLayout(new_hbox)
 
+            ## after each channel features, we add a line separator
             Separator = QFrame(self)
             Separator.setFrameShape(QFrame.HLine)
             Separator.setFrameShadow(QFrame.Sunken)
@@ -204,6 +219,7 @@ class MyWindow(QWidget):
             Separator.setLineWidth(1)
             self.scroll_vbox.addWidget(Separator)
 
+            ## all buttons of the channel are added to a unique group for turning them on/off in special occasions such as move
             self.buttonGroup.addButton(adjust_button)
             self.buttonGroup.addButton(move_button)
             self.buttonGroup.addButton(delete_btn)
@@ -213,6 +229,7 @@ class MyWindow(QWidget):
         self.update_image()
 
     def make_sure_delete(self, new_hbox, Separator, color):
+        ## this function shows a message box to make sure you want to delete a channel
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Critical)
         msg.setText("Are you sure you want to delete this channel?")
@@ -221,12 +238,13 @@ class MyWindow(QWidget):
         if retval == QMessageBox.Ok:
             self.delete_channel(new_hbox, Separator, color)
 
-        # msg.setInformativeText("This is additional information")
 
     def move_whole_func(self, color):
+        ## this function is called when a user chooses "whole image" for moving
         self.move_channel = color
         self.move_mode = "whole"
         self.viewer.startWholeMoveMode(color)
+        ## two accept and reload buttons are shown
         self.accept_move_button.show()
         self.reload_button.show()
         for button in self.buttonGroup.buttons():
@@ -237,12 +255,13 @@ class MyWindow(QWidget):
         self.reload_button.show()
 
     def accept_move(self):
-
         if self.move_mode == "whole":
             self.viewer.EndWholeMoveMode()
         else:
+            ## accept changes on part of the image
             self.channels.accept_move_change(self.move_channel)
         self.move_channel = None
+        ## activate buttons after accepting the move
         for button in self.buttonGroup.buttons():
             button.setEnabled(True)
         self.accept_move_button.hide()
@@ -250,6 +269,7 @@ class MyWindow(QWidget):
 
     def reset_move(self):
         if self.move_mode == "whole":
+            ## this will delete the shifts
             self.channels.reset_shift(self.move_channel)
         else:
             self.channels.reset_move_change(self.move_channel)
@@ -260,6 +280,7 @@ class MyWindow(QWidget):
         self.update_image()
 
     def open_select_adjust(self, color):
+        ## opens a window asking if a user want to adjust the whole channel or part of it
         selection_window = SelectionWindow(self, color,
                                            "For adjustment you have to specify the fragment you want to edit.",
                                            for_adjust=True)
@@ -267,6 +288,7 @@ class MyWindow(QWidget):
         selection_window.show()
 
     def open_select_move(self, color):
+        ## opens a window asking if a user want to move the whole channel or part of it
         selection_window = SelectionWindow(self, color,
                                            "For movement you have to specify the fragment you want to move.",
                                            for_move=True)
@@ -274,6 +296,7 @@ class MyWindow(QWidget):
         selection_window.show()
 
     def open_select_count(self, color):
+        ## opens a window asking if a user want to count signals of the whole channel or part of it
         selection_window = SelectionWindow(self, color,
                                            "For counting you have to specify the fragment you want to see.",
                                            for_count=True)
@@ -281,6 +304,7 @@ class MyWindow(QWidget):
         selection_window.show()
 
     def delete_channel(self, hbox, line, color):
+        ## delete all items in the hbox of the chosen channel and the corresponding separator
         for i in reversed(range(hbox.count())):
             item = hbox.itemAt(i)
 
@@ -296,31 +320,37 @@ class MyWindow(QWidget):
         self.update_image()
 
     def open_adjust(self, color, begin_x, begin_y, width, height):
+        ## get the selected image and pass it to the adjust window
         image = self.channels.get_image(color)[begin_y:begin_y + height, begin_x:begin_x + width]
         self.adjust_window = Adjustments(self, image, begin_x, begin_y, color, self.channels)
         self.adjust_window.setWindowModality(Qt.ApplicationModal)
         self.adjust_window.show()
 
     def open_count(self, color, begin_x, begin_y, width, height):
+        ## get the selected image and pass it to the count window
         image = self.channels.get_image(color)[begin_y:begin_y + height, begin_x:begin_x + width]
         self.count_window = CountWindow(self, self.channels, image, color, begin_x, begin_y)
         self.count_window.setWindowModality(Qt.ApplicationModal)
         self.count_window.show()
 
-    def switch_count(self, color):
+    def select_for_count(self, color):
+        ## after clicking "part of image" for count item
         self.viewer.startSelectCountMode(color)
 
-    def switch_adjust(self, color):
+    def select_for_adjust(self, color):
+        ## after clicking "part of image" in ajust item
         self.viewer.startSelectAdjustMode(color)
 
-    def switch_move(self, color):
+    def select_for_move(self, color):
+        ## after clicking "part of image" in move item
         self.move_mode = "part"
         self.move_channel = color
         for button in self.buttonGroup.buttons():
             button.setEnabled(False)
         self.viewer.startSelectMoveMode(color)
 
-    def check_function(self, color, btn):
+    def hide_and_show(self, color, btn):
+        ## after clicking the visibility button of a chosen channel, this function is called
         if color in self.SELECTED_COLORS:
             btn.setIcon(QIcon("icons/hide.png"))
             self.SELECTED_COLORS.remove(color)
@@ -330,6 +360,7 @@ class MyWindow(QWidget):
         self.update_image()
 
     def update_image(self):
+        ## this function is needed to be called for reloading changes on image
         img = self.channels.sum_channels(self.SELECTED_COLORS)
         if img.size == 0:
             self.viewer.setPhoto(None)
@@ -340,11 +371,12 @@ class MyWindow(QWidget):
             pixmap = QPixmap(qImg)
             self.viewer.update_photo(pixmap)
 
-    def clicked_btn(self):
+    def open_color_window(self):
+        ## after clicking on "add" button, a dialog will open and after that a window for choosing the color
         image = QFileDialog.getOpenFileName(None, 'OpenFile', '', "*.jpg *.png *.tif *.tiff *.bmp *.JPG")
         imagePath = image[0]
         if imagePath != "":
-            self.color_w = ColorWindow(imagePath, self, self.channels)
-            self.color_w.setWindowModality(Qt.ApplicationModal)
-            self.color_w.show()
+            self.color_window = ColorWindow(imagePath, self, self.channels)
+            self.color_window.setWindowModality(Qt.ApplicationModal)
+            self.color_window.show()
 

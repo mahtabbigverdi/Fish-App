@@ -1,8 +1,7 @@
-import sys
+
 from PyQt5.QtWidgets import *
 from Constants import *
-from Channels import Channels
-import cv2
+
 
 class ColorWindow(QWidget):
     def __init__(self,imagePath, main_window, channels):
@@ -13,13 +12,14 @@ class ColorWindow(QWidget):
         self.setFixedHeight(COLORWINDOW_HEIGHT)
         self.setFixedWidth(COLORWINDOW_WIDTH)
         ## MAIN LAYOUT
-        self.color_list = ["Dapi", "Red", "Green", "other"]
+        self.color_list = ["Dapi", "Red", "Green", "Gold", "Orange", "other"]
         layout = QVBoxLayout()
 
         ### CHOOSE COLOR FROM COMBO BOX
         self.choose_hbox = QHBoxLayout()
-        self.label0 = QLabel("Choose the color of channel: ")
-        self.choose_hbox.addWidget(self.label0)
+        self.question_label = QLabel("Choose the color of channel: ")
+        self.choose_hbox.addWidget(self.question_label)
+        ## choose color from combo box
         self.defined_colors = QComboBox()
         self.defined_colors.addItems(self.color_list)
         self.defined_colors.currentIndexChanged.connect(self.selectionchange)
@@ -49,6 +49,7 @@ class ColorWindow(QWidget):
         self.ok_button.setAutoDefault(True)
         self.cancel_button.setFixedHeight(30)
         self.ok_button.setStyleSheet("border-radius: 3px; background-color:black; color:white; border: 3px solid #009688;")
+
         self.ok_button.clicked.connect(self.insert_channel)
         self.buttons_hbox.addWidget(self.ok_button)
         layout.addLayout(self.buttons_hbox)
@@ -56,17 +57,15 @@ class ColorWindow(QWidget):
         self.setLayout(layout)
 
 
-
-
-
     def insert_channel(self):
+        ## after clicking "OK", the image with chosen color will be inserted in the list in the Channels Class
         if self.defined_colors.currentText() != "other":
             self.channels.add_channel(self.defined_colors.currentText(),self.imagePath )
-            self.main_window.update_checkbox(self.defined_colors.currentText())
+            self.main_window.update_channel_list(self.defined_colors.currentText())
             self.close()
         elif self.defined_colors.currentText() == "other" and self.input_color.text()!= "":
             self.channels.add_channel(self.input_color.text(), self.imagePath)
-            self.main_window.update_checkbox(self.input_color.text())
+            self.main_window.update_channel_list(self.input_color.text())
             self.close()
         else:
             msg = QMessageBox()
@@ -80,7 +79,8 @@ class ColorWindow(QWidget):
 
         self.close()
 
-    def selectionchange(self, i):
+    def selectionchange(self):
+        ## if the user selects other, the editbox shows up
         if self.defined_colors.currentText() == "other":
             self.label.show()
             self.input_color.show()
