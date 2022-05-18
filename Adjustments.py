@@ -37,11 +37,13 @@ class Adjustments(QWidget):
         self.main_layout.addLayout(self.layout)
         self.create_image_label()
         self.adjust_vbox = QVBoxLayout()
+        ## create slider and edit box for each item
         self.create_contrast()
         self.create_brightness()
         self.create_threshold()
         # self.create_noise()
-        self.create_color()
+
+        self.create_color_picker()
         self.create_delete()
         self.create_crop()
         self.layout.addLayout(self.adjust_vbox)
@@ -52,54 +54,13 @@ class Adjustments(QWidget):
         self.setLayout(self.main_layout)
 
     def apply_click(self):
+        ## apply changes to the main image of the channel
         self.change_occured = True
         self.channels.change_channel(self.color, self.apply_adjustments(self.image.copy()), self.begin_x, self.begin_y,
                                      self.image_width, self.image_height)
         self.main_window.update_image()
         self.close()
 
-    def add_crop(self, rect):
-        height_coeff = self.image_height / ADJUSTIMAGE_HEIGHT
-        width_coeff = self.image_width / ADJUSTIMAGE_WIDTH
-        center_x =int( (rect.topLeft().x() + rect.bottomRight().x()) / 2 * width_coeff)
-        center_y = int((rect.topLeft().y() + rect.bottomRight().y()) / 2 * height_coeff)
-        rw = int(rect.width() * width_coeff / 2)
-        rh = int(rect.height() * height_coeff / 2)
-        self.temp_crops.append({"center_x": center_x, "center_y": center_y, "rw": rw, "rh": rh})
-        if len(self.temp_crops) == 1:
-            self.undo_crop_btn.setEnabled(True)
-
-
-    def apply_crops(self, image):
-        new_image =  image.copy()
-        angle = 0
-        startAngle = 0
-        endAngle = 360
-        color = (255, 255, 255)
-        thickness = -1
-        for item in self.temp_crops:
-            mask = cv2.ellipse(np.zeros_like(self.image), (item["center_x"], item["center_y"]), (item["rw"], item["rh"]),
-                               angle, startAngle, endAngle, color, thickness).astype(np.uint8)
-            mask = np.where(mask > 0, 1, 0)
-            new_image = (new_image * mask).astype(np.uint8)
-        return new_image
-
-    def create_color(self):
-        self.color_btn = QPushButton("Adjust color")
-        self.color_btn.setFixedHeight(30)
-        self.color_btn.setStyleSheet(
-            "border-radius: 3px; background-color:black; color:white; border: 3px solid #00BCD4 ;")
-        self.color_btn.clicked.connect(self.open_colorDialog)
-        self.adjust_vbox.addWidget(self.color_btn)
-
-    def open_colorDialog(self):
-        color = QColorDialog.getColor()
-
-        if color.isValid():
-            self.image[:,:,0] = np.where(self.image[:,:,0], color.red(), 0)
-            self.image[:, :, 1] = np.where(self.image[:, :, 1], color.green(), 0)
-            self.image[:, :, 2] = np.where(self.image[:, :, 2], color.blue(), 0)
-            self.show_image()
 
     def create_delete(self):
         self.delete_hbox = QHBoxLayout()
@@ -133,21 +94,16 @@ class Adjustments(QWidget):
         self.undo_crop_btn.setFixedHeight(30)
         self.undo_crop_btn.setEnabled(False)
 
-    def crop_func(self):
-        self.viewer.startCropMode()
 
-
-    def undo_crop(self):
-        self.temp_crops.pop()
-        if len(self.temp_crops) == 0:
-            self.undo_crop_btn.setEnabled(False)
-        self.show_image()
-
-    def delete_func(self):
-        self.viewer.startDeleteMode()
+    def create_color_picker(self):
+        self.color_btn = QPushButton("Adjust color")
+        self.color_btn.setFixedHeight(30)
+        self.color_btn.setStyleSheet(
+            "border-radius: 3px; background-color:black; color:white; border: 3px solid #00BCD4 ;")
+        self.color_btn.clicked.connect(self.open_colorDialog)
+        self.adjust_vbox.addWidget(self.color_btn)
 
     def create_noise(self):
-
         self.noise_hbox = QHBoxLayout()
         self.adjust_vbox.addLayout(self.noise_hbox)
         label = QLabel("Denoise")
@@ -193,7 +149,6 @@ class Adjustments(QWidget):
         self.contrast_hbox.addWidget(self.contrast_slider)
         self.contrast_slider.setMinimum(0)
         self.contrast_slider.setMaximum(30)
-        # print("alpha", self.temp_alpha)
         self.contrast_slider.setValue(self.temp_alpha)
         self.contrast_slider.valueChanged.connect(lambda: self.update_contrast(self.contrast_slider.value()))
         self.contrast_input = QLineEdit()
@@ -220,6 +175,34 @@ class Adjustments(QWidget):
         self.brightness_input.setFixedWidth(40)
         self.brightness_input.setAlignment(Qt.AlignCenter)
         self.brightness_input.returnPressed.connect(lambda: self.update_brightness(self.brightness_input.text()))
+    def create_image_label(self):
+        ## create viewer for the image to adjust
+        self.image_vbox = QVBoxLayout()
+        self.image_vbox.setAlignment(Qt.AlignCenter)
+        self.layout.addLayout(self.image_vbox)
+        self.viewer = AdjustViewer(self, ADJUSTIMAGE_WIDTH, ADJUSTIMAGE_HEIGHT, self.channels, self.color)
+        self.viewer.setPhoto(None)
+        self.image_vbox.addWidget(self.viewer)
+        self.show_image()
+        self.create_zoom()
+
+    def create_zoom(self):
+        ## this function adds two buttons for zoom in and out
+        self.zoom_hbox = QHBoxLayout()
+        self.zoom_hbox.setAlignment(Qt.AlignCenter)
+        self.image_vbox.addLayout(self.zoom_hbox)
+        self.zoomin_button = QPushButton()
+        self.zoomout_button = QPushButton()
+        self.zoomin_button.setStyleSheet("border:None; background-image: url('icons/zoom-in(2).png');")
+        self.zoomout_button.setStyleSheet("border:None; background-image: url('icons/zoom-out(2).png'); ")
+        self.zoomin_button.setFixedWidth(20)
+        self.zoomin_button.setFixedHeight(20)
+        self.zoomout_button.setFixedHeight(20)
+        self.zoomout_button.setFixedWidth(20)
+        self.zoomin_button.clicked.connect(lambda: self.viewer.zoomIn())
+        self.zoomout_button.clicked.connect(lambda: self.viewer.zoomOut())
+        self.zoom_hbox.addWidget(self.zoomin_button)
+        self.zoom_hbox.addWidget(self.zoomout_button)
 
     def make_error(self, messgae):
         msg = QMessageBox()
@@ -229,28 +212,6 @@ class Adjustments(QWidget):
         msg.setWindowTitle("Error")
         msg.exec_()
 
-    def add_deletion(self, coords1, coord2):
-        height_coeff = self.image_height / ADJUSTIMAGE_HEIGHT
-        width_coeff = self.image_width / ADJUSTIMAGE_WIDTH
-
-        min_y = int(min(coords1.y(), coord2.y()) * height_coeff)
-        min_x = int(min(coords1.x(), coord2.x()) * width_coeff)
-        max_y = int(max(coords1.y(), coord2.y()) * height_coeff)
-        max_x = int(max(coords1.x(), coord2.x()) * width_coeff)
-        self.temp_deletions.append((min_y, max_y, min_x, max_x))
-        if len(self.temp_deletions) == 1:
-            self.undo_btn.setEnabled(True)
-
-    def undo_deletion(self):
-        self.temp_deletions.pop()
-        if len(self.temp_deletions) == 0:
-            self.undo_btn.setEnabled(False)
-        self.show_image()
-
-    def apply_deletions(self, image):
-        for coords in self.temp_deletions:
-            image[coords[0]:coords[1], coords[2]:coords[3]] = 0
-        return image
 
     def apply_adjustments(self, image):
         ## apply temporary crops
@@ -367,37 +328,90 @@ class Adjustments(QWidget):
         self.brightness_slider.setValue(int(val))
         self.update_image(("brightness", int(val)))
 
-    def create_image_label(self):
-        ## create viewer for the image to adjust
-        self.image_vbox = QVBoxLayout()
-        self.image_vbox.setAlignment(Qt.AlignCenter)
-        self.layout.addLayout(self.image_vbox)
-        self.viewer = AdjustViewer(self, ADJUSTIMAGE_WIDTH, ADJUSTIMAGE_HEIGHT, self.channels, self.color)
-        self.viewer.setPhoto(None)
-        self.image_vbox.addWidget(self.viewer)
-        self.show_image()
-        self.create_zoom()
 
-    def create_zoom(self):
-        ## this function adds two buttons for zoom in and out
-        self.zoom_hbox = QHBoxLayout()
-        self.zoom_hbox.setAlignment(Qt.AlignCenter)
-        self.image_vbox.addLayout(self.zoom_hbox)
-        self.zoomin_button = QPushButton()
-        self.zoomout_button = QPushButton()
-        self.zoomin_button.setStyleSheet("border:None; background-image: url('icons/zoom-in(2).png');")
-        self.zoomout_button.setStyleSheet("border:None; background-image: url('icons/zoom-out(2).png'); ")
-        self.zoomin_button.setFixedWidth(20)
-        self.zoomin_button.setFixedHeight(20)
-        self.zoomout_button.setFixedHeight(20)
-        self.zoomout_button.setFixedWidth(20)
-        self.zoomin_button.clicked.connect(lambda: self.viewer.zoomIn())
-        self.zoomout_button.clicked.connect(lambda: self.viewer.zoomOut())
-        self.zoom_hbox.addWidget(self.zoomin_button)
-        self.zoom_hbox.addWidget(self.zoomout_button)
 
     def denoise(self, image, noise_value):
         im = image.copy()
         for i in range(noise_value):
             im = cv2.bilateralFilter(im, 5, 75, 75)
         return im
+
+
+
+
+    def open_colorDialog(self):
+        ## choose color from colorpicker for each channels
+        color = QColorDialog.getColor()
+        if color.isValid():
+            self.image[:,:,0] = np.where(self.image[:,:,0], color.red(), 0)
+            self.image[:, :, 1] = np.where(self.image[:, :, 1], color.green(), 0)
+            self.image[:, :, 2] = np.where(self.image[:, :, 2], color.blue(), 0)
+            self.show_image()
+
+
+
+    def crop_func(self):
+        ## start selecting for crop in the viewer
+        self.viewer.startCropMode()
+
+    def add_crop(self, rect):
+        height_coeff = self.image_height / ADJUSTIMAGE_HEIGHT
+        width_coeff = self.image_width / ADJUSTIMAGE_WIDTH
+        center_x =int( (rect.topLeft().x() + rect.bottomRight().x()) / 2 * width_coeff)
+        center_y = int((rect.topLeft().y() + rect.bottomRight().y()) / 2 * height_coeff)
+        rw = int(rect.width() * width_coeff / 2)
+        rh = int(rect.height() * height_coeff / 2)
+        self.temp_crops.append({"center_x": center_x, "center_y": center_y, "rw": rw, "rh": rh})
+        if len(self.temp_crops) == 1:
+            self.undo_crop_btn.setEnabled(True)
+
+
+    def apply_crops(self, image):
+        new_image =  image.copy()
+        angle = 0
+        startAngle = 0
+        endAngle = 360
+        color = (255, 255, 255)
+        thickness = -1
+        for item in self.temp_crops:
+            mask = cv2.ellipse(np.zeros_like(self.image), (item["center_x"], item["center_y"]), (item["rw"], item["rh"]),
+                               angle, startAngle, endAngle, color, thickness).astype(np.uint8)
+            mask = np.where(mask > 0, 1, 0)
+            new_image = (new_image * mask).astype(np.uint8)
+        return new_image
+
+    def undo_crop(self):
+        ## remove the last crop
+        self.temp_crops.pop()
+        if len(self.temp_crops) == 0:
+            self.undo_crop_btn.setEnabled(False)
+        self.show_image()
+
+    def delete_func(self):
+        ## start selecting for deletion in the viewer
+        self.viewer.startDeleteMode()
+
+    def add_deletion(self, coords1, coord2):
+        height_coeff = self.image_height / ADJUSTIMAGE_HEIGHT
+        width_coeff = self.image_width / ADJUSTIMAGE_WIDTH
+
+        min_y = int(min(coords1.y(), coord2.y()) * height_coeff)
+        min_x = int(min(coords1.x(), coord2.x()) * width_coeff)
+        max_y = int(max(coords1.y(), coord2.y()) * height_coeff)
+        max_x = int(max(coords1.x(), coord2.x()) * width_coeff)
+        self.temp_deletions.append((min_y, max_y, min_x, max_x))
+        if len(self.temp_deletions) == 1:
+            self.undo_btn.setEnabled(True)
+
+    def apply_deletions(self, image):
+        for coords in self.temp_deletions:
+            image[coords[0]:coords[1], coords[2]:coords[3]] = 0
+        return image
+
+    def undo_deletion(self):
+        ## remove the last deletion
+        self.temp_deletions.pop()
+        if len(self.temp_deletions) == 0:
+            self.undo_btn.setEnabled(False)
+        self.show_image()
+

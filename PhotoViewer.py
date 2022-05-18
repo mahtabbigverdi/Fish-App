@@ -42,13 +42,14 @@ class PhotoViewer(QGraphicsView):
         self.setBackgroundBrush(QBrush(QColor(0, 0, 0)))
         self.setFrameShape(QFrame.NoFrame)
 
+        ## rectangle for selecting
         self._current_rect_item = QGraphicsRectItem()
-        # self._current_rect_item.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
         self._current_rect_item.setPen(Qt.white)
         self._scene.addItem(self._current_rect_item)
         self.begin, self.destination = QPoint(), QPoint()
 
     def drawRect(self, coords1, coords2):
+        ## change the rect item according to two input coordinates
 
         r = QRectF(coords1, coords2)
 
@@ -97,6 +98,7 @@ class PhotoViewer(QGraphicsView):
         self.fitInView()
 
     def wheelEvent(self, event):
+        ## for zoomi in/out
         if self.hasPhoto():
             if event.angleDelta().y() > 0:
                 factor = 1.25
@@ -148,6 +150,7 @@ class PhotoViewer(QGraphicsView):
         self.move_channel = None
 
     def startPartMoveMode(self, destination, rect):
+        ## find cursor position after selecting a part for movement
         self.cursorPosRect = self.setCursorPositionInRect(rect, self.destination)
         self.part_move_mode = True
         self.start_move_pos = destination
@@ -196,6 +199,7 @@ class PhotoViewer(QGraphicsView):
                 self.begin = self.mapToScene(event.pos()).toPoint()
                 self.destination = self.begin
         if self.counter_mode:
+            ## in this mode we dont want to draw a rectangle and just want to check if a point is in a blob
             if event.buttons() & Qt.LeftButton:
                 self.begin = self.mapToScene(event.pos()).toPoint()
                 self.parent.check_point(self.begin)
@@ -206,10 +210,12 @@ class PhotoViewer(QGraphicsView):
     def mouseMoveEvent(self, event):
         if self.select_for_adjust_mode or self.select_for_move_mode or self.select_for_count_mode:
             if event.buttons() & Qt.LeftButton:
+                ## just draw rectangle with the coordinates of the press event and current coordinates
                 self.destination = self.mapToScene(event.pos()).toPoint()
                 self.drawRect(self.begin, self.destination)
         elif self.whole_move_mode:
             if event.buttons() & Qt.LeftButton:
+                ## find the value of shift to pass to Channels class for further update
                 self.destination = self.mapToScene(event.pos()).toPoint()
                 HShift = self.destination.x() - self.begin.x()
                 VShift = self.destination.y() - self.begin.y()
@@ -218,6 +224,7 @@ class PhotoViewer(QGraphicsView):
                 self.begin = self.destination
         elif self.part_move_mode:
             if event.buttons() & Qt.LeftButton:
+                ## after finding the cursor position when selecting finished, a rectangle around the selected part in drawn while moving
                 self.destination = self.mapToScene(event.pos()).toPoint()
                 topleft = self.getTopLeft(self.destination)
                 new_rect = QRectF(topleft, QSizeF(self.moved_part.shape[1], self.moved_part.shape[0]))
@@ -228,6 +235,7 @@ class PhotoViewer(QGraphicsView):
 
     def mouseReleaseEvent(self, event):
         if self.select_for_adjust_mode:
+            ## after selecting open adjust window in the previous class
             if event.button() & Qt.LeftButton:
                 self.drawRect(self.begin, self.destination)
                 rect = QRectF(self.begin, self.destination).normalized()
@@ -237,14 +245,13 @@ class PhotoViewer(QGraphicsView):
             self.toggleDragMode()
             self.select_for_adjust_mode = False
         elif self.select_for_move_mode:
+            ## after selecting for move
             if event.button() & Qt.LeftButton:
                 self.toggleDragMode()
                 self.select_for_move_mode = False
                 self.drawRect(self.begin, self.destination)
                 rect = QRectF(self.begin, self.destination).normalized()
-
                 self.startPartMoveMode(self.destination, rect)
-
         elif self.select_for_count_mode:
             if event.button() & Qt.LeftButton:
                 self.drawRect(self.begin, self.destination)

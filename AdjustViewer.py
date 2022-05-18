@@ -1,13 +1,11 @@
 from PyQt5.QtWidgets import  *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
-from Constants import *
-import numpy as np
-import cv2
+
 
 class AdjustViewer(QGraphicsView):
     photoClicked = pyqtSignal(QPoint)
-
+    ## same as photoviewer but just for the adjust window image
     def __init__(self, parent,  WIDTH, HEIGHT, channels=None, color=None):
         super(AdjustViewer, self).__init__(parent)
         self._zoom = 0
@@ -49,6 +47,7 @@ class AdjustViewer(QGraphicsView):
 
 
     def drawEllipse(self, coords1, coords2):
+        # for crop
         self._current_ellipse_item.setRect(QRectF(coords1, coords2).normalized())
 
 
@@ -76,7 +75,6 @@ class AdjustViewer(QGraphicsView):
                 factor = min(viewrect.width() / scenerect.width(),
                              viewrect.height() / scenerect.height())
                 self.scale(factor, factor)
-                # print(factor, viewrect.width() , scenerect.width(),viewrect.height() , scenerect.height())
             self._zoom = 0
 
     def setPhoto(self, pixmap=None):
