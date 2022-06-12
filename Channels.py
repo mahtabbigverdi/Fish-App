@@ -3,7 +3,6 @@ import numpy as np
 from Constants import *
 
 
-
 class Channels():
 
     def __new__(cls):
@@ -119,6 +118,42 @@ class Channels():
             out = self.get_invert_dapi().astype(np.uint8).copy()
         return out
 
+    def count_blob_channel(self, name, mask):
+        params = cv2.SimpleBlobDetector_Params()
+        params.filterByArea = False
+        # params.minArea = 1
+        # params.maxArea = 100000
+
+        params.minDistBetweenBlobs = 0
+
+        params.filterByCircularity = False
+        # params.minCircularity = 0.1
+        # params.maxCircularity = 1
+        params.filterByConvexity = False
+        # params.minConvexity = 0.1
+
+        params.filterByInertia = False
+        self.detector = cv2.SimpleBlobDetector_create(params)
+        im = cv2.cvtColor((self.get_image(name) * mask).astype(np.uint8), cv2.COLOR_RGB2GRAY)
+        # if name == "Red":
+        #     cv2.imshow("r", im)
+        # if name == "Green":
+        #     cv2.imshow("g", im)
+        _, im = cv2.threshold(im, 0, 255, cv2.THRESH_BINARY)
+        im = cv2.bitwise_not(im)
+        self.keypoints = list(self.detector.detect(im))
+        number = 0
+        for i in self.keypoints[0:]:
+            number = number + 1
+        return number
+
+    def count_blobs(self, selected_colors, mask):
+        out = {}
+        for color in selected_colors:
+            if color == "Dapi":
+                continue
+            out[color] = self.count_blob_channel(color, mask)
+        return out
 
     def delete_channel(self, name):
         del self.dictionary[name]

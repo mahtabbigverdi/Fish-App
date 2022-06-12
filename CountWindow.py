@@ -124,7 +124,7 @@ class CountWindow(QWidget):
     def process_image(self):
         ## find contours of the image
         im = cv2.cvtColor(self.image, cv2.COLOR_RGB2GRAY)
-        _, im = cv2.threshold(im, 10, 255, cv2.THRESH_OTSU)
+        _, im = cv2.threshold(im, 0, 255, cv2.THRESH_BINARY)
         im =cv2.bitwise_not(im)
         self.keypoints = list(self.detector.detect(im))
         # cv2.imwrite("Screen Shot 1401-02-15 at 16.47.27.png", cv2.cvtColor(self.image, cv2.COLOR_RGB2BGR))

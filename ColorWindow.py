@@ -1,7 +1,8 @@
 
 from PyQt5.QtWidgets import *
 from Constants import *
-
+from PyQt5.QtGui import *
+from PyQt5.QtCore import *
 
 class ColorWindow(QWidget):
     def __init__(self,imagePath, main_window, channels):
@@ -49,13 +50,19 @@ class ColorWindow(QWidget):
         self.ok_button.setAutoDefault(True)
         self.cancel_button.setFixedHeight(30)
         self.ok_button.setStyleSheet("border-radius: 3px; background-color:black; color:white; border: 3px solid #009688;")
-
+        self.shortcut = QShortcut(QKeySequence("Ctrl+O"), self)
         self.ok_button.clicked.connect(self.insert_channel)
+
+
+
         self.buttons_hbox.addWidget(self.ok_button)
         layout.addLayout(self.buttons_hbox)
 
         self.setLayout(layout)
 
+    def keyPressEvent(self, e):
+        if e.key() == Qt.Key_Return or e.key() == Qt.Key_Enter:
+            self.insert_channel()
 
     def insert_channel(self):
         ## after clicking "OK", the image with chosen color will be inserted in the list in the Channels Class

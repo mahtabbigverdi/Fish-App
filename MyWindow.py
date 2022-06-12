@@ -7,6 +7,7 @@ from Adjustments import Adjustments
 from PhotoViewer import PhotoViewer
 from SelectionWindow import SelectionWindow
 from CountWindow import CountWindow
+from WholeCountWindow import  WholeCountWindow
 
 
 class MyWindow(QWidget):
@@ -20,7 +21,7 @@ class MyWindow(QWidget):
         ## there are two move modes "whole" and "part", in whole mode you can move the whole channel, in part mode just a selected part by user
         self.move_mode = "whole"
         ## all widths and heights of windows are in  constants file
-        self.setGeometry(100,100, MAINWINDOW_WIDTH, MAINWINDOW_HEIGHT)
+        self.setGeometry(100, 100, MAINWINDOW_WIDTH, MAINWINDOW_HEIGHT)
         ## this window's size is not changeable
         self.setFixedHeight(MAINWINDOW_HEIGHT)
         self.setFixedWidth(MAINWINDOW_WIDTH)
@@ -88,10 +89,10 @@ class MyWindow(QWidget):
         self.main_vbox.addWidget(self.scroll_area)
 
         self.create_add_button()
+        self.create_count_button()
+        self.create_invert_button()
 
         self.main_layout.addLayout(self.main_vbox)
-
-
 
         self.create_menus()
 
@@ -116,51 +117,87 @@ class MyWindow(QWidget):
         self.zoom_hbox.addWidget(self.zoomout_button)
 
     def create_menus(self):
-        ## this function creates menu for the main window
-        self.menubar = QMenuBar()
-        self.fileMenu = QMenu("File")
-        self.menubar.addMenu(self.fileMenu)
-        # self.fileMenu.addAction("Add channel", self.clicked_btn)
-
-        self.invert_action = self.fileMenu.addAction("invert", self.invert)
-        self.uninvert_action = self.fileMenu.addAction("uninvert", self.uninvert)
-        self.invert_action.setEnabled(False)
-        self.uninvert_action.setEnabled(False)
-
-        self.main_layout.setMenuBar(self.menubar)
+        pass
+        # ## this function creates menu for the main window
+        # self.menubar = QMenuBar()
+        # self.fileMenu = QMenu("File")
+        # self.menubar.addMenu(self.fileMenu)
+        # # self.fileMenu.addAction("Add channel", self.clicked_btn)
+        #
+        # self.invert_action = self.fileMenu.addAction("invert", self.invert)
+        # self.uninvert_action = self.fileMenu.addAction("uninvert", self.uninvert)
+        # self.invert_action.setEnabled(False)
+        # self.uninvert_action.setEnabled(False)
+        # self.main_layout.setMenuBar(self.menubar)
 
     def invert(self):
         ## after clicking on "invert" in file menu, this function is called, this function turns on the invert mode in Channels class
         self.channels.StartInvertMode()
         self.update_image()
-        self.uninvert_action.setEnabled(True)
-        self.invert_action.setEnabled(False)
+        # self.uninvert_action.setEnabled(True)
+        # self.invert_action.setEnabled(False)
+        self.invert_btn.setText("UnInvert")
 
     def uninvert(self):
         ## this function turns off the invert mode in Channels class
         self.channels.EndInvertMode()
         self.update_image()
-        self.uninvert_action.setEnabled(False)
-        self.invert_action.setEnabled(True)
+        # self.uninvert_action.setEnabled(False)
+        # self.invert_action.setEnabled(True)
+        self.invert_btn.setText("Invert")
 
     def create_add_button(self):
         ## this function adds "add channel" button
         btn1 = QPushButton("  Add channel!")
         btn1.setFixedWidth(SCROLLAREA_WIDTH)
         btn1.setFixedHeight(50)
-        btn1.setStyleSheet("background-color: #009688; color: white;  border-radius: 5px; font-weight: bold")
+        btn1.setFixedWidth(SCROLLAREA_WIDTH)
+        btn1.setStyleSheet("background-color: #009688; color: white;  border-radius: 5px; font-weight: bold; border: 4px solid gray;")
         btn1.setIcon(QIcon("icons/plus.png"))
         btn1.clicked.connect(self.open_color_window)
         self.buttonGroup.addButton(btn1)
         self.main_vbox.addWidget(btn1)
+
+    def create_count_button(self):
+        ## this function adds "count" button
+        self.count_btn = QPushButton("  Count")
+        self.count_btn.setFixedWidth(SCROLLAREA_WIDTH)
+        self.count_btn.setFixedHeight(50)
+        self.count_btn.setFixedWidth(SCROLLAREA_WIDTH)
+        self.count_btn.setStyleSheet("background-color: #3ebda8; color: white;  border-radius: 5px; font-weight: bold; border: 4px solid gray;")
+        self.count_btn.setIcon(QIcon("icons/abacus.png"))
+        self.count_btn.clicked.connect(self.open_whole_count)
+        self.buttonGroup.addButton(self.count_btn )
+        self.main_vbox.addWidget(self.count_btn )
+        self.count_btn.setEnabled(False)
+
+    def create_invert_button(self):
+        ## this function adds "invert" button
+        self.invert_btn = QPushButton("  Invert")
+        self.invert_btn.setFixedWidth(SCROLLAREA_WIDTH)
+        self.invert_btn.setFixedHeight(50)
+        self.invert_btn.setFixedWidth(SCROLLAREA_WIDTH)
+        self.invert_btn.setStyleSheet("background-color: #86d1c5; color: white;  border-radius: 5px; font-weight: bold; border: 4px solid gray;")
+        self.invert_btn.clicked.connect(self.click_invert_btn)
+        self.invert_btn.setIcon(QIcon("icons/exchange.png"))
+        self.invert_btn.setEnabled(False)
+        self.buttonGroup.addButton(self.invert_btn)
+        self.main_vbox.addWidget(self.invert_btn)
+
+    def click_invert_btn(self):
+        if self.invert_btn.text() == "Invert":
+            self.invert()
+        else:
+            self.uninvert()
 
     def update_channel_list(self, color):
         ## if the color was not added before, is added here
         if color not in self.SELECTED_COLORS:
             self.SELECTED_COLORS.add(color)
             if color == "Dapi":
-                self.invert_action.setEnabled(True)
-                self.uninvert_action.setEnabled(False)
+                self.invert_btn.setEnabled(True)
+                # self.invert_action.setEnabled(True)
+                # self.uninvert_action.setEnabled(False)
             new_hbox = QHBoxLayout()
             ## visibility button for hide/show the channel
             visibility_btn = QToolButton()
@@ -224,6 +261,8 @@ class MyWindow(QWidget):
             self.buttonGroup.addButton(move_button)
             self.buttonGroup.addButton(delete_btn)
 
+
+
             delete_btn.clicked.connect(lambda: self.make_sure_delete(new_hbox, Separator, color))
 
         self.update_image()
@@ -237,7 +276,6 @@ class MyWindow(QWidget):
         retval = msg.exec_()
         if retval == QMessageBox.Ok:
             self.delete_channel(new_hbox, Separator, color)
-
 
     def move_whole_func(self, color):
         ## this function is called when a user chooses "whole image" for moving
@@ -314,8 +352,11 @@ class MyWindow(QWidget):
 
         self.SELECTED_COLORS.remove(color)
         if color == "Dapi":
-            self.invert_action.setEnabled(False)
-            self.uninvert_action.setEnabled(False)
+            self.invert_btn.setEnabled(False)
+            self.invert_btn.setText("Invert")
+            self.channels.EndInvertMode()
+            # self.invert_action.setEnabled(False)
+            # self.uninvert_action.setEnabled(False)
         self.channels.delete_channel(color)
         self.update_image()
 
@@ -325,6 +366,12 @@ class MyWindow(QWidget):
         self.adjust_window = Adjustments(self, image, begin_x, begin_y, color, self.channels)
         self.adjust_window.setWindowModality(Qt.ApplicationModal)
         self.adjust_window.show()
+
+    def open_whole_count(self):
+        image = self.channels.sum_channels(self.SELECTED_COLORS)[0:IMAGE_HEIGHT, 0:IMAGE_HEIGHT]
+        self.w_count_window = WholeCountWindow(self, self.channels, image, self.SELECTED_COLORS)
+        self.w_count_window.setWindowModality(Qt.ApplicationModal)
+        self.w_count_window.show()
 
     def open_count(self, color, begin_x, begin_y, width, height):
         ## get the selected image and pass it to the count window
@@ -363,13 +410,15 @@ class MyWindow(QWidget):
         ## this function is needed to be called for reloading changes on image
         img = self.channels.sum_channels(self.SELECTED_COLORS)
         if img.size == 0:
-            self.viewer.setPhoto(None)
+            self.viewer.update_photo(QPixmap())
+            self.count_btn.setEnabled(False)
         else:
             height, width, channel = img.shape
             bytesPerLine = 3 * width
             qImg = QImage(img.data.tobytes(), width, height, bytesPerLine, QImage.Format_RGB888)
             pixmap = QPixmap(qImg)
             self.viewer.update_photo(pixmap)
+            self.count_btn.setEnabled(True)
 
     def open_color_window(self):
         ## after clicking on "add" button, a dialog will open and after that a window for choosing the color
@@ -379,4 +428,3 @@ class MyWindow(QWidget):
             self.color_window = ColorWindow(imagePath, self, self.channels)
             self.color_window.setWindowModality(Qt.ApplicationModal)
             self.color_window.show()
-
